@@ -397,6 +397,31 @@ void brightness_wake_screen_on_reconnect(void)
     }
 }
 
+
+bool brightness_wake_screen_on_touch(void)
+{
+    last_activity = k_uptime_get();
+
+    // Screen turned off on purpose (toggle key / brightness down): let the
+    // gesture through so e.g. double-tap can toggle it back on
+    if (screen_on || off_through_modifier)
+    {
+        return false;
+    }
+
+    LOG_INF("Touch while idle, waking screen");
+    screen_set_on(true);
+    k_wakeup(screen_idle_tid);
+    return true;
+}
+
+#else
+
+bool brightness_wake_screen_on_touch(void)
+{
+    return false;
+}
+
 #endif
 
 // --- Brightness control via keyboard ---

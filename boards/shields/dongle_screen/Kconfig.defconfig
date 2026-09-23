@@ -175,6 +175,35 @@ config DONGLE_SCREEN_BONGO_CAT_ACTIVE
     help
       Bongo cat at the top of the screen that slaps the desk on every key press
 
+config DONGLE_SCREEN_TOUCH
+    bool "Touch gestures on the screen's touch panel"
+    default y
+    depends on DT_HAS_ZMK_DONGLE_SCREEN_TOUCH_GESTURES_ENABLED
+    select INPUT
+    help
+      Tap / double-tap / long-press / swipe gestures mapped to behaviors via a
+      zmk,dongle-screen-touch-gestures devicetree node
+
+if DONGLE_SCREEN_TOUCH
+
+config DONGLE_SCREEN_TOUCH_SWIPE_PX
+    int "Minimum travel for a swipe (px)"
+    default 40
+
+config DONGLE_SCREEN_TOUCH_LONG_PRESS_MS
+    int "Hold time for a long press (ms)"
+    default 600
+
+config DONGLE_SCREEN_TOUCH_DOUBLE_TAP_MS
+    int "Window for the second tap of a double-tap (ms)"
+    default 300
+
+config DONGLE_SCREEN_TOUCH_TAP_MS
+    int "How long a gesture's behavior is held pressed (ms)"
+    default 30
+
+endif
+
 config DONGLE_SCREEN_AMBIENT_LIGHT
     bool "Enable automatic brightness via ambient light sensor"
     default n

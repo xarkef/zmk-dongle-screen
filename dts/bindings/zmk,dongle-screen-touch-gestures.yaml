@@ -1,0 +1,31 @@
+# SPDX-License-Identifier: MIT
+
+description: |
+  Turns touches on the dongle screen's touch panel into gestures and runs a
+  ZMK behavior for each one. `bindings` must list exactly 7 behaviors, in order:
+  tap, double-tap, long-press, swipe-up, swipe-down, swipe-left, swipe-right.
+  Use &none for gestures you don't want.
+
+compatible: "zmk,dongle-screen-touch-gestures"
+
+properties:
+  input:
+    type: phandle
+    required: true
+    description: Touch input device (e.g. a hynitron,cst816s node)
+
+  bindings:
+    type: phandle-array
+    required: true
+
+  swap-xy:
+    type: boolean
+    description: Swap raw X/Y so they match the screen's orientation
+
+  invert-x:
+    type: boolean
+    description: Invert X (after swap)
+
+  invert-y:
+    type: boolean
+    description: Invert Y (after swap)
