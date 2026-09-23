@@ -19,6 +19,9 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/usb.h>
 
 #include "battery_status.h"
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_CHARGING)
+#include <zmk/events/split_charging_state_changed.h>
+#endif
 #include "../brightness.h"
 
 #if IS_ENABLED(CONFIG_ZMK_DONGLE_DISPLAY_DONGLE_BATTERY)
@@ -45,6 +48,11 @@ static lv_color_t battery_image_buffer[ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOUR
 // Peripheral reconnection tracking
 // ZMK sends battery events with level < 1 when peripherals disconnect
 static int8_t last_battery_levels[ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OFFSET];
+
+// Halves on USB power (from zmk_split_charging_state_changed); written in event context
+static bool charging[ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OFFSET];
+
+#define CHARGING_COLOR lv_palette_main(LV_PALETTE_GREEN)
 
 static void init_peripheral_tracking(void) {
     for (int i = 0; i < (ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OFFSET); i++) {
@@ -75,7 +83,10 @@ static bool is_peripheral_reconnecting(uint8_t source, uint8_t new_level) {
 
 static void draw_battery(lv_obj_t *canvas, uint8_t level, bool usb_present) {
     
-    if (level < 1)
+    if (usb_present && level >= 1)
+    {
+        lv_canvas_fill_bg(canvas, CHARGING_COLOR, LV_OPA_COVER);
+    } else if (level < 1)
     {
         lv_canvas_fill_bg(canvas, lv_palette_main(LV_PALETTE_RED), LV_OPA_COVER);
     } else if (level <= 10) {
@@ -149,6 +160,9 @@ static void set_battery_symbol(lv_obj_t *widget, struct battery_state state) {
     {
         lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_RED), 0);
         lv_label_set_text(label, "X");
+    } else if (state.usb_present) {
+        lv_obj_set_style_text_color(label, CHARGING_COLOR, 0);
+        lv_label_set_text_fmt(label, LV_SYMBOL_CHARGE " %u", state.level);
     } else if (state.level <= 10) {
         lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_YELLOW), 0);
         lv_label_set_text_fmt(label, "%4u", state.level);
@@ -173,9 +187,11 @@ void battery_status_update_cb(struct battery_state state) {
 
 static struct battery_state peripheral_battery_status_get_state(const zmk_event_t *eh) {
     const struct zmk_peripheral_battery_state_changed *ev = as_zmk_peripheral_battery_state_changed(eh);
+    uint8_t source = ev->source + SOURCE_OFFSET;
     return (struct battery_state){
-        .source = ev->source + SOURCE_OFFSET,
+        .source = source,
         .level = ev->state_of_charge,
+        .usb_present = source < ARRAY_SIZE(charging) && charging[source],
     };
 }
 
@@ -190,8 +206,33 @@ static struct battery_state central_battery_status_get_state(const zmk_event_t *
     };
 }
 
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_CHARGING)
+static struct battery_state charging_status_get_state(const zmk_event_t *eh) {
+    const struct zmk_split_charging_state_changed *ev = as_zmk_split_charging_state_changed(eh);
+    uint8_t source = ev->source + SOURCE_OFFSET;
+
+    if (source >= ARRAY_SIZE(charging)) {
+        return (struct battery_state){.source = UINT8_MAX};
+    }
+    charging[source] = ev->charging;
+
+    // Redraw with the last known level; UINT8_MAX source = nothing to draw yet
+    int8_t level = last_battery_levels[source];
+    return (struct battery_state){
+        .source = level < 0 ? UINT8_MAX : source,
+        .level = level < 0 ? 0 : level,
+        .usb_present = ev->charging,
+    };
+}
+#endif
+
 static struct battery_state battery_status_get_state(const zmk_event_t *eh) { 
-    if (as_zmk_peripheral_battery_state_changed(eh) != NULL) {
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_CHARGING)
+    if (eh != NULL && as_zmk_split_charging_state_changed(eh) != NULL) {
+        return charging_status_get_state(eh);
+    }
+#endif
+    if (eh != NULL && as_zmk_peripheral_battery_state_changed(eh) != NULL) {
         return peripheral_battery_status_get_state(eh);
     } else {
         return central_battery_status_get_state(eh);
@@ -202,6 +243,9 @@ ZMK_DISPLAY_WIDGET_LISTENER(widget_dongle_battery_status, struct battery_state,
                             battery_status_update_cb, battery_status_get_state)
 
 ZMK_SUBSCRIPTION(widget_dongle_battery_status, zmk_peripheral_battery_state_changed);
+#if IS_ENABLED(CONFIG_ZMK_SPLIT_CHARGING)
+ZMK_SUBSCRIPTION(widget_dongle_battery_status, zmk_split_charging_state_changed);
+#endif
 
 #if IS_ENABLED(CONFIG_ZMK_DONGLE_DISPLAY_DONGLE_BATTERY)
 #if !IS_ENABLED(CONFIG_ZMK_SPLIT) || IS_ENABLED(CONFIG_ZMK_SPLIT_ROLE_CENTRAL)

@@ -1,0 +1,15 @@
+# SPDX-License-Identifier: MIT
+
+config ZMK_SPLIT_CHARGING
+    bool "Share each half's USB-power (charging) state with the central"
+    default y
+    depends on ZMK_SPLIT && ZMK_SPLIT_BLE && SOC_SERIES_NRF52X
+    help
+      Peripherals watch VBUS and expose it over a small GATT service; the
+      central subscribes and raises zmk_split_charging_state_changed so the
+      dongle screen can show which half is charging.
+
+config ZMK_SPLIT_CHARGING_POLL_MS
+    int "How often a peripheral checks for USB power (ms)"
+    default 3000
+    depends on ZMK_SPLIT_CHARGING && !ZMK_SPLIT_ROLE_CENTRAL
