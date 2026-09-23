@@ -86,11 +86,9 @@ static void draw_battery(lv_obj_t *canvas, uint8_t level, bool usb_present) {
     if (usb_present && level >= 1)
     {
         lv_canvas_fill_bg(canvas, CHARGING_COLOR, LV_OPA_COVER);
-    } else if (level < 1)
+    } else if (level < CONFIG_DONGLE_SCREEN_LOW_BATTERY_PCT)
     {
         lv_canvas_fill_bg(canvas, lv_palette_main(LV_PALETTE_RED), LV_OPA_COVER);
-    } else if (level <= 10) {
-        lv_canvas_fill_bg(canvas, lv_palette_main(LV_PALETTE_YELLOW), LV_OPA_COVER);
     } else {
         lv_canvas_fill_bg(canvas, lv_color_white(), LV_OPA_COVER);
     }
@@ -125,6 +123,61 @@ static const char *battery_icon(uint8_t level) {
     return LV_SYMBOL_BATTERY_EMPTY;
 }
 
+// Screen slot for a source: halves are numbered in pairing order, which may not match left/right
+static int battery_pos(int source) {
+#if IS_ENABLED(CONFIG_DONGLE_SCREEN_BATTERY_REVERSE)
+    if (source >= SOURCE_OFFSET) {
+        return SOURCE_OFFSET + (ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT - 1 - (source - SOURCE_OFFSET));
+    }
+#endif
+    return source;
+}
+
+static char side_letter(int source) {
+    if (source < SOURCE_OFFSET) {
+        return 'D';
+    }
+    return battery_pos(source) - SOURCE_OFFSET == 0 ? 'L' : 'R';
+}
+
+static void opa_anim_cb(void *obj, int32_t value) { lv_obj_set_style_opa(obj, value, 0); }
+
+// Low battery: pulse the bar until it's charged or charging
+static void set_pulse(lv_obj_t *obj, bool on) {
+    bool running = lv_anim_get(obj, opa_anim_cb) != NULL;
+    if (on == running) {
+        return;
+    }
+    if (on) {
+        lv_anim_t a;
+        lv_anim_init(&a);
+        lv_anim_set_var(&a, obj);
+        lv_anim_set_exec_cb(&a, opa_anim_cb);
+        lv_anim_set_values(&a, LV_OPA_COVER, LV_OPA_20);
+        lv_anim_set_time(&a, 700);
+        lv_anim_set_playback_time(&a, 700);
+        lv_anim_set_repeat_count(&a, LV_ANIM_REPEAT_INFINITE);
+        lv_anim_start(&a);
+    } else {
+        lv_anim_del(obj, opa_anim_cb);
+        lv_obj_set_style_opa(obj, LV_OPA_COVER, 0);
+    }
+}
+
+// Disconnect: blink the label a few times
+static void blink(lv_obj_t *obj) {
+    lv_anim_del(obj, opa_anim_cb);
+    lv_anim_t a;
+    lv_anim_init(&a);
+    lv_anim_set_var(&a, obj);
+    lv_anim_set_exec_cb(&a, opa_anim_cb);
+    lv_anim_set_values(&a, LV_OPA_COVER, LV_OPA_TRANSP);
+    lv_anim_set_time(&a, 250);
+    lv_anim_set_playback_time(&a, 250);
+    lv_anim_set_repeat_count(&a, 5);
+    lv_anim_start(&a);
+}
+
 static void set_battery_symbol(lv_obj_t *widget, struct battery_state state) {
     if (state.source >= ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OFFSET) {
         return;
@@ -133,6 +186,8 @@ static void set_battery_symbol(lv_obj_t *widget, struct battery_state state) {
     // Check for reconnection using the existing battery level mechanism
     bool reconnecting = is_peripheral_reconnecting(state.source, state.level);
     
+    bool disconnected = last_battery_levels[state.source] >= 1 && state.level < 1;
+
     // Update our tracking
     last_battery_levels[state.source] = state.level;
 
@@ -156,31 +211,31 @@ static void set_battery_symbol(lv_obj_t *widget, struct battery_state state) {
 
     draw_battery(symbol, state.level, state.usb_present);
     
-    if (state.level > 0) {
-        lv_obj_set_style_text_color(label, lv_color_white(), 0);
-        lv_label_set_text_fmt(label, "%s %u", battery_icon(state.level), state.level);
-    } else {
-        lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_RED), 0);
-        lv_label_set_text(label, "X");
-    }
+    char side = side_letter(state.source);
+    bool low = state.level >= 1 && state.level < CONFIG_DONGLE_SCREEN_LOW_BATTERY_PCT && !state.usb_present;
 
-    if (state.level < 1)
-    {
+    if (state.level < 1) {
         lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_RED), 0);
-        lv_label_set_text(label, "X");
+        lv_label_set_text_fmt(label, "%c lost", side);
+        if (disconnected) {
+            LOG_INF("Peripheral %d disconnected", state.source);
+            blink(label);
+#if CONFIG_DONGLE_SCREEN_IDLE_TIMEOUT_S > 0
+            brightness_wake_screen_on_reconnect();
+#endif
+        }
     } else if (state.usb_present) {
         lv_obj_set_style_text_color(label, CHARGING_COLOR, 0);
-        lv_label_set_text_fmt(label, "%s " LV_SYMBOL_CHARGE " %u", battery_icon(state.level), state.level);
-    } else if (state.level <= 10) {
-        lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_YELLOW), 0);
-        lv_label_set_text_fmt(label, "%s %u", battery_icon(state.level), state.level);
+        lv_label_set_text_fmt(label, "%c %s " LV_SYMBOL_CHARGE " %u", side, battery_icon(state.level), state.level);
+    } else if (low) {
+        lv_obj_set_style_text_color(label, lv_palette_main(LV_PALETTE_RED), 0);
+        lv_label_set_text_fmt(label, "%c %s %u", side, battery_icon(state.level), state.level);
     } else {
         lv_obj_set_style_text_color(label, lv_color_white(), 0);
-        lv_label_set_text_fmt(label, "%s %u", battery_icon(state.level), state.level);
+        lv_label_set_text_fmt(label, "%c %s %u", side, battery_icon(state.level), state.level);
     }
-    
-    
-    
+    set_pulse(symbol, low);
+
     lv_obj_clear_flag(symbol, LV_OBJ_FLAG_HIDDEN);
     lv_obj_move_foreground(symbol);
     lv_obj_clear_flag(label, LV_OBJ_FLAG_HIDDEN);
@@ -276,13 +331,7 @@ int zmk_widget_dongle_battery_status_init(struct zmk_widget_dongle_battery_statu
 
         lv_canvas_set_buffer(image_canvas, battery_image_buffer[i], 102, 5, LV_IMG_CF_TRUE_COLOR);
 
-        // Halves are numbered in pairing order, which may not match left/right
-        int pos = i;
-#if IS_ENABLED(CONFIG_DONGLE_SCREEN_BATTERY_REVERSE)
-        if (i >= SOURCE_OFFSET) {
-            pos = SOURCE_OFFSET + (ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT - 1 - (i - SOURCE_OFFSET));
-        }
-#endif
+        int pos = battery_pos(i);
         lv_obj_align(image_canvas, LV_ALIGN_BOTTOM_MID, -60 +(pos * 120), -8);
         lv_obj_align(battery_label, LV_ALIGN_TOP_MID, -60 +(pos * 120), 0);
 

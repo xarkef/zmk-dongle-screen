@@ -211,6 +211,23 @@ config DONGLE_SCREEN_BATTERY_REVERSE
       Halves are shown in pairing order. If the right half paired first its
       battery shows on the left; enable this to swap them.
 
+config DONGLE_SCREEN_BONGO_CAT_SLEEP_S
+    int "Seconds without typing before the bongo cat falls asleep"
+    default 30
+
+config DONGLE_SCREEN_BONGO_CAT_FAST_WPM
+    int "WPM at which the bongo cat starts sweating"
+    default 80
+
+config DONGLE_SCREEN_LOW_BATTERY_PCT
+    int "Battery % below which a half counts as low (red pulsing bar, worried cat)"
+    default 15
+
+config DONGLE_SCREEN_CAPS_ACTIVE
+    bool "Caps Lock badge"
+    default y
+    depends on ZMK_HID_INDICATORS
+
 config DONGLE_SCREEN_AMBIENT_LIGHT
     bool "Enable automatic brightness via ambient light sensor"
     default n

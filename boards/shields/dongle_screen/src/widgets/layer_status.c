@@ -15,6 +15,8 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include <zmk/endpoints.h>
 #include <zmk/keymap.h>
 
+#include "../layer_colors.h"
+
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
 struct layer_status_state
@@ -23,19 +25,9 @@ struct layer_status_state
     const char *label;
 };
 
-// Layer name colour by layer index; layers past the end reuse the last colour
-static const uint32_t layer_colors[] = {
-    0xFFFFFF, // 0 base: white
-    0x4FC3F7, // 1 lower: sky blue
-    0xFFB74D, // 2 raise: amber
-    0xF06292, // 3 adjust: pink
-    0xAED581, // 4+: lime
-};
-
 static void set_layer_symbol(lv_obj_t *label, struct layer_status_state state)
 {
-    uint8_t color_idx = MIN(state.index, ARRAY_SIZE(layer_colors) - 1);
-    lv_obj_set_style_text_color(label, lv_color_hex(layer_colors[color_idx]), 0);
+    lv_obj_set_style_text_color(label, lv_color_hex(layer_color(state.index)), 0);
 
     if (state.label == NULL)
     {
