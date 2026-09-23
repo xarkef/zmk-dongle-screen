@@ -31,6 +31,11 @@ static struct zmk_widget_wpm_status wpm_status_widget;
 static struct zmk_widget_mod_status mod_widget;
 #endif
 
+#if CONFIG_DONGLE_SCREEN_BONGO_CAT_ACTIVE
+#include "widgets/bongo_cat.h"
+static struct zmk_widget_bongo_cat bongo_cat_widget;
+#endif
+
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
@@ -74,6 +79,11 @@ lv_obj_t *zmk_display_status_screen()
 #if CONFIG_DONGLE_SCREEN_MODIFIER_ACTIVE
     zmk_widget_mod_status_init(&mod_widget, screen);
     lv_obj_align(zmk_widget_mod_status_obj(&mod_widget), LV_ALIGN_CENTER, 0, 35);
+#endif
+
+#if CONFIG_DONGLE_SCREEN_BONGO_CAT_ACTIVE
+    zmk_widget_bongo_cat_init(&bongo_cat_widget, screen);
+    lv_obj_align(zmk_widget_bongo_cat_obj(&bongo_cat_widget), LV_ALIGN_TOP_MID, 0, 8);
 #endif
 
     return screen;

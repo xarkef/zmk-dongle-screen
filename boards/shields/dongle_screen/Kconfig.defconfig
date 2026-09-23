@@ -169,6 +169,12 @@ config DONGLE_SCREEN_BATTERY_ACTIVE
     help
       If the Battery Widget should be active or not
 
+config DONGLE_SCREEN_BONGO_CAT_ACTIVE
+    bool "Bongo Cat Widget active"
+    default y
+    help
+      Bongo cat at the top of the screen that slaps the desk on every key press
+
 config DONGLE_SCREEN_AMBIENT_LIGHT
     bool "Enable automatic brightness via ambient light sensor"
     default n
