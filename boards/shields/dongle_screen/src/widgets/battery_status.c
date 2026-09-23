@@ -268,8 +268,15 @@ int zmk_widget_dongle_battery_status_init(struct zmk_widget_dongle_battery_statu
 
         lv_canvas_set_buffer(image_canvas, battery_image_buffer[i], 102, 5, LV_IMG_CF_TRUE_COLOR);
 
-        lv_obj_align(image_canvas, LV_ALIGN_BOTTOM_MID, -60 +(i * 120), -8);
-        lv_obj_align(battery_label, LV_ALIGN_TOP_MID, -60 +(i * 120), 0);
+        // Halves are numbered in pairing order, which may not match left/right
+        int pos = i;
+#if IS_ENABLED(CONFIG_DONGLE_SCREEN_BATTERY_REVERSE)
+        if (i >= SOURCE_OFFSET) {
+            pos = SOURCE_OFFSET + (ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT - 1 - (i - SOURCE_OFFSET));
+        }
+#endif
+        lv_obj_align(image_canvas, LV_ALIGN_BOTTOM_MID, -60 +(pos * 120), -8);
+        lv_obj_align(battery_label, LV_ALIGN_TOP_MID, -60 +(pos * 120), 0);
 
         lv_obj_add_flag(image_canvas, LV_OBJ_FLAG_HIDDEN);
         lv_obj_add_flag(battery_label, LV_OBJ_FLAG_HIDDEN);

@@ -204,6 +204,13 @@ config DONGLE_SCREEN_TOUCH_TAP_MS
 
 endif
 
+config DONGLE_SCREEN_BATTERY_REVERSE
+    bool "Swap the halves' battery positions"
+    default n
+    help
+      Halves are shown in pairing order. If the right half paired first its
+      battery shows on the left; enable this to swap them.
+
 config DONGLE_SCREEN_AMBIENT_LIGHT
     bool "Enable automatic brightness via ambient light sensor"
     default n
