@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2024 The ZMK Contributors
- *
  * SPDX-License-Identifier: MIT
  */
 
@@ -9,11 +7,13 @@
 #include <lvgl.h>
 #include <zephyr/kernel.h>
 
+#define WPM_BARS 8
+
 struct zmk_widget_wpm_status
 {
     lv_obj_t *obj;
     lv_obj_t *wpm_label;
-    lv_obj_t *font_test;
+    lv_obj_t *bars[WPM_BARS];
     sys_snode_t node;
 };
 

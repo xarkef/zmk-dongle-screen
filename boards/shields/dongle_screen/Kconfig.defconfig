@@ -37,7 +37,7 @@ config LV_Z_VDB_SIZE
     default 100
 
 config LV_Z_MEM_POOL_SIZE
-    default 10000
+    default 16384
 
 config LV_DPI_DEF
     default 261
@@ -60,7 +60,7 @@ choice LV_FONT_DEFAULT
 endchoice
 
 config LV_FONT_MONTSERRAT_40
-    default y
+    default n
 
 config PWM
     default y
@@ -171,9 +171,20 @@ config DONGLE_SCREEN_BATTERY_ACTIVE
 
 config DONGLE_SCREEN_BONGO_CAT_ACTIVE
     bool "Bongo Cat Widget active"
-    default y
+    default n
     help
       Bongo cat at the top of the screen that slaps the desk on every key press
+
+config DONGLE_SCREEN_DATA_STREAM_ACTIVE
+    bool "Data stream widget active"
+    default y
+    help
+      Scrolling hex rows at the top of the screen, one row per key press.
+      Takes the bongo cat's place; enable only one of the two.
+
+config DONGLE_SCREEN_DATA_STREAM_IDLE_S
+    int "Seconds without typing before the data stream goes to standby"
+    default 30
 
 config DONGLE_SCREEN_TOUCH
     bool "Touch gestures on the screen's touch panel"

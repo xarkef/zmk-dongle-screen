@@ -7,13 +7,13 @@
 #include <stdint.h>
 #include <zephyr/sys/util.h>
 
-// Colour per layer index (layer name + cat tint); layers past the end reuse the last one
+// Neon colour per layer index (layer name, frame, chips); layers past the end reuse the last one
 static const uint32_t layer_colors[] = {
-    0xFFFFFF, // 0 base: white (cat stays ginger)
-    0x4FC3F7, // 1 lower: sky blue
-    0xFFB74D, // 2 raise: amber
-    0xF06292, // 3 adjust: pink
-    0xAED581, // 4+: lime
+    0xFF2A6D, // 0 BASE: magenta
+    0x00F0FF, // 1 NAV: cyan
+    0xFCEE0A, // 2 SYM: yellow
+    0xFF1E32, // 3 ADJUST: red
+    0x39FF88, // 4+ NUM: green
 };
 
 static inline uint32_t layer_color(uint8_t index)

@@ -16,6 +16,11 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 #include "caps_status.h"
 
+#define CHIP_W 42
+#define CHIP_H 15
+
+static lv_color_t chip_buf[CHIP_W * CHIP_H];
+
 // HID LED usage 0x02 (Caps Lock) -> bit 1 of the indicator report
 #define CAPS_LOCK_BIT BIT(1)
 
@@ -55,18 +60,12 @@ ZMK_SUBSCRIPTION(widget_caps_status, zmk_hid_indicators_changed);
 
 int zmk_widget_caps_status_init(struct zmk_widget_caps_status *widget, lv_obj_t *parent)
 {
-    widget->obj = lv_label_create(parent);
-    lv_label_set_text(widget->obj, LV_SYMBOL_UP " CAPS");
-    lv_obj_set_style_text_color(widget->obj, lv_color_black(), 0);
-    lv_obj_set_style_bg_color(widget->obj, lv_color_hex(0xFFD54F), 0);
-    lv_obj_set_style_bg_opa(widget->obj, LV_OPA_COVER, 0);
-    lv_obj_set_style_radius(widget->obj, 6, 0);
-    lv_obj_set_style_pad_hor(widget->obj, 6, 0);
-    lv_obj_set_style_pad_ver(widget->obj, 2, 0);
+    widget->obj = cp_container(parent, 0, 0, CHIP_W, CHIP_H);
+    cp_chip_init(&widget->chip, widget->obj, chip_buf, 0, 0, CHIP_W, CHIP_H, 4, &cp_mono_12, "CAPS");
+    cp_chip_set(&widget->chip, CP_YELLOW, true);
     lv_obj_add_flag(widget->obj, LV_OBJ_FLAG_HIDDEN);
 
     sys_slist_append(&widgets, &widget->node);
-
     widget_caps_status_init();
     return 0;
 }

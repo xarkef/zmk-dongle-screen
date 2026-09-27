@@ -1,6 +1,4 @@
 /*
- * Copyright (c) 2024 The ZMK Contributors
- *
  * SPDX-License-Identifier: MIT
  */
 
@@ -8,12 +6,12 @@
 
 #include <lvgl.h>
 #include <zephyr/kernel.h>
+#include "../theme.h"
 
-// output_status.h
 struct zmk_widget_output_status
 {
     lv_obj_t *obj;
-    lv_obj_t *transport_label;
+    struct cp_chip transport;
     lv_obj_t *ble_label;
     sys_snode_t node;
 };

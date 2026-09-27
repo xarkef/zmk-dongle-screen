@@ -1,70 +1,69 @@
+/*
+ * Modifiers: CTL / SFT / ALT / GUI chips, filled in the layer colour while held.
+ *
+ * SPDX-License-Identifier: MIT
+ */
+
 #include <zephyr/kernel.h>
 #include <zephyr/logging/log.h>
 #include <zmk/hid.h>
+#include <zmk/keymap.h>
 #include <lvgl.h>
 #include "mod_status.h"
-#include <fonts.h> // <-- Wichtig für LV_FONT_DECLARE
+#include "../layer_colors.h"
 
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
-static void update_mod_status(struct zmk_widget_mod_status *widget)
+#define CHIP_W 36
+#define CHIP_H 16
+#define CHIP_GAP 6
+
+static const char *const names[MOD_CHIPS] = {"CTL", "SFT", "ALT", "GUI"};
+static const uint8_t masks[MOD_CHIPS] = {
+    MOD_LCTL | MOD_RCTL,
+    MOD_LSFT | MOD_RSFT,
+    MOD_LALT | MOD_RALT,
+    MOD_LGUI | MOD_RGUI,
+};
+
+static lv_color_t chip_bufs[MOD_CHIPS][CHIP_W * CHIP_H];
+static struct zmk_widget_mod_status *mod_widget;
+
+static void update_work_cb(struct k_work *work)
 {
     uint8_t mods = zmk_hid_get_keyboard_report()->body.modifiers;
-    char text[32] = "";
-    int idx = 0;
+    uint32_t tint = layer_color(zmk_keymap_highest_layer_active());
 
-    // Temporäre Puffer für Symbole
-    char *syms[4];
-    int n = 0;
-
-    if (mods & (MOD_LCTL | MOD_RCTL))
-        syms[n++] = "󰘴";
-    if (mods & (MOD_LSFT | MOD_RSFT))
-        syms[n++] = "󰘶"; // U+F0636
-    if (mods & (MOD_LALT | MOD_RALT))
-        syms[n++] = "󰘵"; // U+F0635
-    if (mods & (MOD_LGUI | MOD_RGUI))
-    // set next syms according to CONFIG_DONGLE_SCREEN_SYSTEM (0,1,2)
-#if CONFIG_DONGLE_SCREEN_SYSTEM_ICON == 1
-        syms[n++] = "󰌽"; // U+DF3D
-#elif CONFIG_DONGLE_SCREEN_SYSTEM_ICON == 2
-        syms[n++] = ""; // U+E62A
-#else
-        syms[n++] = "󰘳"; // U+F0633
-#endif
-
-    for (int i = 0; i < n; ++i)
+    for (int i = 0; i < MOD_CHIPS; i++)
     {
-        if (i > 0)
-            idx += snprintf(&text[idx], sizeof(text) - idx, " ");
-        idx += snprintf(&text[idx], sizeof(text) - idx, "%s", syms[i]);
+        bool on = mods & masks[i];
+        cp_chip_set(&mod_widget->chips[i], on ? tint : CP_DIM, on);
     }
-
-    lv_label_set_text(widget->label, idx ? text : "");
 }
 
+static K_WORK_DEFINE(update_work, update_work_cb);
+
+// Poll the HID report; LVGL is only touched on the display queue
 static void mod_status_timer_cb(struct k_timer *timer)
 {
-    struct zmk_widget_mod_status *widget = k_timer_user_data_get(timer);
-    update_mod_status(widget);
+    k_work_submit_to_queue(zmk_display_work_q(), &update_work);
 }
 
-static struct k_timer mod_status_timer;
+static K_TIMER_DEFINE(mod_status_timer, mod_status_timer_cb, NULL);
 
 int zmk_widget_mod_status_init(struct zmk_widget_mod_status *widget, lv_obj_t *parent)
 {
-    widget->obj = lv_obj_create(parent);
-    lv_obj_set_size(widget->obj, 180, 40);
+    widget->obj = cp_container(parent, 0, 0, MOD_CHIPS * (CHIP_W + CHIP_GAP) - CHIP_GAP, CHIP_H);
 
-    widget->label = lv_label_create(widget->obj);
-    lv_obj_align(widget->label, LV_ALIGN_CENTER, 0, 0);
-    lv_label_set_text(widget->label, "-");
-    lv_obj_set_style_text_font(widget->label, &NerdFonts_Regular_40, 0); // <-- NerdFont setzen
+    for (int i = 0; i < MOD_CHIPS; i++)
+    {
+        cp_chip_init(&widget->chips[i], widget->obj, chip_bufs[i], i * (CHIP_W + CHIP_GAP), 0, CHIP_W,
+                     CHIP_H, 4, &cp_mono_12, names[i]);
+    }
 
-    k_timer_init(&mod_status_timer, mod_status_timer_cb, NULL);
-    k_timer_user_data_set(&mod_status_timer, widget);
+    mod_widget = widget;
+    update_work_cb(NULL);
     k_timer_start(&mod_status_timer, K_MSEC(100), K_MSEC(100));
-
     return 0;
 }
 

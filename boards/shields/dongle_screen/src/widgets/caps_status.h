@@ -6,10 +6,12 @@
 
 #include <lvgl.h>
 #include <zephyr/kernel.h>
+#include "../theme.h"
 
 struct zmk_widget_caps_status
 {
     lv_obj_t *obj;
+    struct cp_chip chip;
     sys_snode_t node;
 };
 
