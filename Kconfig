@@ -13,3 +13,11 @@ config ZMK_SPLIT_CHARGING_POLL_MS
     int "How often a peripheral checks for USB power (ms)"
     default 3000
     depends on ZMK_SPLIT_CHARGING && !ZMK_SPLIT_ROLE_CENTRAL
+
+config ZMK_USB_1200_BAUD_BOOTLOADER
+    bool "Reboot into the UF2 bootloader on a 1200 baud touch"
+    depends on USB_CDC_ACM && SOC_SERIES_NRF52X
+    select CDC_ACM_DTE_RATE_CALLBACK_SUPPORT
+    help
+      When the host sets the CDC ACM port to 1200 baud (stty -F /dev/ttyACM0 1200),
+      reboot with the Adafruit UF2 magic so NICENANO mounts without pressing reset.
