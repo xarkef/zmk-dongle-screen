@@ -52,6 +52,11 @@ static int8_t last_battery_levels[ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OF
 // Halves on USB power (from zmk_split_charging_state_changed); written in event context
 static bool charging[ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OFFSET];
 
+// Latest level per source, written in event context. last_battery_levels only updates once
+// the display queue draws, so a charging event right after a disconnect would redraw the stale level.
+static int8_t event_battery_levels[ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OFFSET] = {
+    [0 ... ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT + SOURCE_OFFSET - 1] = -1};
+
 #define CHARGING_COLOR lv_palette_main(LV_PALETTE_GREEN)
 
 static void init_peripheral_tracking(void) {
@@ -251,6 +256,9 @@ void battery_status_update_cb(struct battery_state state) {
 static struct battery_state peripheral_battery_status_get_state(const zmk_event_t *eh) {
     const struct zmk_peripheral_battery_state_changed *ev = as_zmk_peripheral_battery_state_changed(eh);
     uint8_t source = ev->source + SOURCE_OFFSET;
+    if (source < ARRAY_SIZE(event_battery_levels)) {
+        event_battery_levels[source] = ev->state_of_charge;
+    }
     return (struct battery_state){
         .source = source,
         .level = ev->state_of_charge,
@@ -280,7 +288,7 @@ static struct battery_state charging_status_get_state(const zmk_event_t *eh) {
     charging[source] = ev->charging;
 
     // Redraw with the last known level; UINT8_MAX source = nothing to draw yet
-    int8_t level = last_battery_levels[source];
+    int8_t level = event_battery_levels[source];
     return (struct battery_state){
         .source = level < 0 ? UINT8_MAX : source,
         .level = level < 0 ? 0 : level,
