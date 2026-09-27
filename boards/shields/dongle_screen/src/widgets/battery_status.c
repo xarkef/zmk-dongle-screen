@@ -5,7 +5,6 @@
  */
 
 #include <zephyr/kernel.h>
-#include <zephyr/bluetooth/conn.h>
 #include <zephyr/bluetooth/services/bas.h>
 
 #include <zephyr/logging/log.h>
@@ -302,59 +301,6 @@ static struct battery_state battery_status_get_state(const zmk_event_t *eh) {
         return central_battery_status_get_state(eh);
     }
 }
-
-// ZMK 0.3.0 no longer raises a 0% battery event when a half disconnects
-// (commented out in split_central_disconnected), so raise it ourselves.
-// Not in a public header, but exported by ZMK's split central
-extern int peripheral_slot_index_for_conn(struct bt_conn *conn);
-
-static struct bt_conn *peripheral_conns[ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT];
-static atomic_t lost_mask;
-
-// Raise from the system workqueue, not the BT RX thread
-static void lost_work_cb(struct k_work *work) {
-    for (int i = 0; i < ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT; i++) {
-        if (atomic_test_and_clear_bit(&lost_mask, i)) {
-            raise_zmk_peripheral_battery_state_changed(
-                (struct zmk_peripheral_battery_state_changed){.source = i, .state_of_charge = 0});
-        }
-    }
-}
-static K_WORK_DEFINE(lost_work, lost_work_cb);
-
-static void peripheral_security_changed(struct bt_conn *conn, bt_security_t level,
-                                        enum bt_security_err err) {
-    struct bt_conn_info info;
-
-    if (err || bt_conn_get_info(conn, &info) < 0 || info.role != BT_CONN_ROLE_CENTRAL) {
-        return;
-    }
-
-    int idx = peripheral_slot_index_for_conn(conn);
-    if (idx < 0 || idx >= ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT || peripheral_conns[idx] == conn) {
-        return;
-    }
-    if (peripheral_conns[idx]) {
-        bt_conn_unref(peripheral_conns[idx]);
-    }
-    peripheral_conns[idx] = bt_conn_ref(conn);
-}
-
-static void peripheral_disconnected(struct bt_conn *conn, uint8_t reason) {
-    for (int i = 0; i < ZMK_SPLIT_CENTRAL_PERIPHERAL_COUNT; i++) {
-        if (peripheral_conns[i] == conn) {
-            bt_conn_unref(peripheral_conns[i]);
-            peripheral_conns[i] = NULL;
-            atomic_set_bit(&lost_mask, i);
-            k_work_submit(&lost_work);
-        }
-    }
-}
-
-BT_CONN_CB_DEFINE(dongle_battery_conn_cb) = {
-    .disconnected = peripheral_disconnected,
-    .security_changed = peripheral_security_changed,
-};
 
 ZMK_DISPLAY_WIDGET_LISTENER(widget_dongle_battery_status, struct battery_state,
                             battery_status_update_cb, battery_status_get_state)
