@@ -177,9 +177,9 @@ static void blink(lv_obj_t *obj) {
     lv_anim_set_var(&a, obj);
     lv_anim_set_exec_cb(&a, opa_anim_cb);
     lv_anim_set_values(&a, LV_OPA_COVER, LV_OPA_TRANSP);
-    lv_anim_set_time(&a, 250);
-    lv_anim_set_playback_time(&a, 250);
-    lv_anim_set_repeat_count(&a, 5);
+    lv_anim_set_time(&a, 600);
+    lv_anim_set_playback_time(&a, 600);
+    lv_anim_set_repeat_count(&a, 4);
     lv_anim_start(&a);
 }
 
