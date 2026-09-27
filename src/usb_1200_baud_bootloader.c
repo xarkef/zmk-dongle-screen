@@ -9,7 +9,7 @@
 #include <zephyr/init.h>
 #include <zephyr/device.h>
 #include <zephyr/sys/reboot.h>
-#include <zephyr/usb/class/cdc_acm.h>
+#include <zephyr/drivers/uart/cdc_acm.h>
 
 #include <zephyr/logging/log.h>
 LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
