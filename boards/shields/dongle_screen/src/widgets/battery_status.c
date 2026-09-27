@@ -44,7 +44,7 @@ struct battery_state {
 #define SEG_PITCH 11
 #define SEG_H 7
 #define COL_W (SEGMENTS * SEG_PITCH - (SEG_PITCH - SEG_W))
-#define COL_GAP 36
+#define COL_GAP 26
 
 struct battery_object {
     lv_obj_t *symbol; // segment bar canvas

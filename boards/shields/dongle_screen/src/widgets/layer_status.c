@@ -18,7 +18,6 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #include "../layer_colors.h"
 #include "../theme.h"
 
-#define GHOST_OFFSET 2
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
@@ -44,18 +43,8 @@ static void set_layer_symbol(struct zmk_widget_layer_status *widget, struct laye
 
     lv_label_set_text_fmt(widget->tag, "// LAYER_%02d", state.index);
 
-    // Chromatic-aberration ghosts behind the name, never the same colour as the name
-    lv_obj_t *labels[] = {widget->ghost_left, widget->ghost_right, widget->name};
-    for (int i = 0; i < ARRAY_SIZE(labels); i++)
-    {
-        lv_label_set_text(labels[i], text);
-    }
-    lv_obj_set_style_text_color(widget->ghost_left, CP_COLOR(tint == CP_CYAN ? CP_MAGENTA : CP_CYAN), 0);
-    lv_obj_set_style_text_color(widget->ghost_right, CP_COLOR(tint == CP_MAGENTA ? CP_CYAN : CP_MAGENTA), 0);
+    lv_label_set_text(widget->name, text);
     lv_obj_set_style_text_color(widget->name, CP_COLOR(tint), 0);
-    lv_obj_align(widget->ghost_left, LV_ALIGN_TOP_MID, -GHOST_OFFSET, 18);
-    lv_obj_align(widget->ghost_right, LV_ALIGN_TOP_MID, GHOST_OFFSET, 18);
-    lv_obj_align(widget->name, LV_ALIGN_TOP_MID, 0, 18);
 }
 
 static void layer_status_update_cb(struct layer_status_state state)
@@ -83,9 +72,8 @@ int zmk_widget_layer_status_init(struct zmk_widget_layer_status *widget, lv_obj_
 
     widget->tag = cp_label(widget->obj, &cp_mono_10, CP_DIM, "");
     lv_obj_align(widget->tag, LV_ALIGN_TOP_MID, 0, 0);
-    widget->ghost_left = cp_label(widget->obj, &cp_orbitron_34, CP_CYAN, "");
-    widget->ghost_right = cp_label(widget->obj, &cp_orbitron_34, CP_MAGENTA, "");
     widget->name = cp_label(widget->obj, &cp_orbitron_34, CP_MAGENTA, "");
+    lv_obj_align(widget->name, LV_ALIGN_TOP_MID, 0, 18);
 
     sys_slist_append(&widgets, &widget->node);
     widget_layer_status_init();

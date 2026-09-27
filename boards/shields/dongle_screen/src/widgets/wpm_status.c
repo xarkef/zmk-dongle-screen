@@ -20,7 +20,7 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 #define BAR_W 3
 #define BAR_GAP 2
 #define BAR_MAX_H 12
-#define BAR_BOTTOM 50
+#define BAR_BOTTOM 54
 
 static sys_slist_t widgets = SYS_SLIST_STATIC_INIT(&widgets);
 
@@ -71,11 +71,11 @@ ZMK_SUBSCRIPTION(widget_wpm_status, zmk_wpm_state_changed);
 
 int zmk_widget_wpm_status_init(struct zmk_widget_wpm_status *widget, lv_obj_t *parent)
 {
-    widget->obj = cp_container(parent, 0, 0, 64, 52);
+    widget->obj = cp_container(parent, 0, 0, 64, 56);
 
     cp_label(widget->obj, &cp_mono_12, CP_YELLOW, "WPM");
     widget->wpm_label = cp_label(widget->obj, &cp_orbitron_22, CP_TEXT, "000");
-    lv_obj_set_pos(widget->wpm_label, 0, 12);
+    lv_obj_set_pos(widget->wpm_label, 0, 15);
 
     for (int i = 0; i < WPM_BARS; i++)
     {

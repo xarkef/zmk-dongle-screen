@@ -10,7 +10,6 @@
 struct zmk_widget_frame_decor
 {
     sys_snode_t node;
-    lv_obj_t *brackets[4];
     lv_obj_t *divider;
     lv_obj_t *net;
 };

@@ -56,6 +56,9 @@ LOG_MODULE_DECLARE(zmk, CONFIG_ZMK_LOG_LEVEL);
 
 lv_style_t global_style;
 
+// The panel has rounded corners; keep corner widgets this far in
+#define CORNER_INSET 20
+
 // Top-left position of a widget, centred horizontally when x < 0
 static void place(lv_obj_t *obj, lv_coord_t x, lv_coord_t y)
 {
@@ -89,17 +92,17 @@ lv_obj_t *zmk_display_status_screen()
 
 #if CONFIG_DONGLE_SCREEN_WPM_ACTIVE
     zmk_widget_wpm_status_init(&wpm_status_widget, screen);
-    place(zmk_widget_wpm_status_obj(&wpm_status_widget), 10, 8);
+    place(zmk_widget_wpm_status_obj(&wpm_status_widget), CORNER_INSET, 14);
 #endif
 
 #if CONFIG_DONGLE_SCREEN_OUTPUT_ACTIVE
     zmk_widget_output_status_init(&output_status_widget, screen);
-    place(zmk_widget_output_status_obj(&output_status_widget), w - 10 - 44, 8);
+    place(zmk_widget_output_status_obj(&output_status_widget), w - CORNER_INSET - 44, 14);
 #endif
 
 #if CONFIG_DONGLE_SCREEN_CAPS_ACTIVE
     zmk_widget_caps_status_init(&caps_status_widget, screen);
-    place(zmk_widget_caps_status_obj(&caps_status_widget), 10, 64);
+    place(zmk_widget_caps_status_obj(&caps_status_widget), CORNER_INSET, 72);
 #endif
 
 #if CONFIG_DONGLE_SCREEN_DATA_STREAM_ACTIVE
@@ -124,7 +127,7 @@ lv_obj_t *zmk_display_status_screen()
 
 #if CONFIG_DONGLE_SCREEN_BATTERY_ACTIVE
     zmk_widget_dongle_battery_status_init(&dongle_battery_status_widget, screen);
-    place(zmk_widget_dongle_battery_status_obj(&dongle_battery_status_widget), -1, 205);
+    place(zmk_widget_dongle_battery_status_obj(&dongle_battery_status_widget), -1, 204);
 #endif
 
     return screen;

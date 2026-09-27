@@ -9,7 +9,7 @@
 #include <lvgl.h>
 #include <fonts.h>
 
-#define CP_BG 0x06050E
+#define CP_BG 0x000000
 #define CP_GRID 0x141028
 #define CP_DIM 0x463C6E
 #define CP_TEXT 0xEBEBF5
