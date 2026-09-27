@@ -2,6 +2,8 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <zephyr/sys/util.h>
+
 #include "theme.h"
 
 lv_obj_t *cp_container(lv_obj_t *parent, lv_coord_t x, lv_coord_t y, lv_coord_t w, lv_coord_t h)
